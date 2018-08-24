@@ -18,7 +18,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
 if __name__ == "__main__":
     HOST, PORT = "localhost", 9998
     # Enter FULL path to folder containing extracted Stanford Core NLP
-    ss = CoreNLP(configdict={'annotators': 'tokenize, ssplit, pos, parse'}, corenlp_jars=["path_to_stanford_corenlp/*"])
+    ss = CoreNLP(configdict={'annotators': 'tokenize, ssplit, pos, parse'}, corenlp_jars=["stanford-corenlp-full-2015-01-29/*"])
     print "model loaded"
     server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
     server.serve_forever()
