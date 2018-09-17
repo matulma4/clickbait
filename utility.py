@@ -7,12 +7,14 @@ import networkx as nx
 import nltk
 import nltk.data
 import numpy
+import requests
 from nltk.corpus import stopwords
 from sklearn.externals import joblib
 
-HOST = '127.0.0.1'
-PORT = 9998
+HOST = 'http://34.196.128.143'
+PORT = 4585
 # alchemyapi = AlchemyAPI()
+nltk.download("stopwords")
 stops = stopwords.words("english")
 clf1 = joblib.load("dependencies/nb_small/nb_normal.pkl")
 clf2 = joblib.load("dependencies/nb_small/nb_pos.pkl")
@@ -34,9 +36,11 @@ def convert_to_pattern(title):
     words = []
     deps_cc = []
     for sen in analysis["sentences"]:
-        tags += sen['pos']
-        words += sen['tokens']
-        deps_cc += sen["deps_cc"]
+        for tok in sen["tokens"]:
+            tags.append(tok["pos"])
+            words.append(tok["word"])
+        for dep in sen["basic-dependencies"]:
+            deps_cc.append([dep["dep"].lower(), dep["governor"], dep["dependent"]])
     norm = []
     i = 0
     while i < len(tags):
@@ -61,7 +65,7 @@ def convert_to_pattern(title):
     return ' '.join(norm)
 
 
-def get_stanford_analysis(document):
+def get_stanford_analysis_old(document):
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((HOST, PORT))
@@ -72,6 +76,12 @@ def get_stanford_analysis(document):
         return json.loads(received)
     finally:
         sock.close()
+
+
+def get_stanford_analysis(document):
+    payload = {"params": {"annotators": "tokenize,ssplit,pos", "outputFormat": "json"}}
+    r = requests.post(":".join([HOST, str(PORT)]), data=document, params=payload)
+    return json.loads(r.content)
 
 
 def normalize_title(tags, words):
@@ -146,9 +156,11 @@ def naive_bayes(analysis):
     words = []
     deps_cc = []
     for sen in analysis["sentences"]:
-        tags += sen['pos']
-        words += sen['tokens']
-        deps_cc += sen["deps_cc"]
+        for tok in sen["tokens"]:
+            tags.append(tok["pos"])
+            words.append(tok["word"])
+        for dep in sen["basic-dependencies"]:
+            deps_cc.append([dep["dep"].lower(), dep["governor"], dep["dependent"]])
     norm = normalize_title(tags, words)
 
     f1 = []
@@ -207,9 +219,11 @@ def create_vector(title):
     words = []
     deps_cc = []
     for sen in analysis["sentences"]:
-        tags += sen['pos']
-        words += sen['tokens']
-        deps_cc += sen["deps_cc"]
+        for tok in sen["tokens"]:
+            tags.append(tok["pos"])# sen['pos']
+            words.append(tok["word"])# sen['tokens']
+        for dep in sen["basic-dependencies"]:
+            deps_cc.append([dep["dep"].lower(), dep["governor"], dep["dependent"]])# sen["deps_cc"]
     for i in range(0, len(words)):
         if not isinstance(words[i], unicode):
             words[i] = unicode(words[i], 'utf-8')
